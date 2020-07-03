@@ -32,6 +32,12 @@ class NotEncryptedSocketMessenger extends TgSocketMessenger
     private ?AnonymousMessage $config;
     private array $callbackQueue = [];
     private array $writeQueue = [];
+    /**
+     * pre-generated message id (used for auth flow)
+     *
+     * @var int|null
+     */
+    private $messageId;
 
     /**
      * @param Socket                 $socket
@@ -123,6 +129,21 @@ class NotEncryptedSocketMessenger extends TgSocketMessenger
     }
 
     /**
+     * @throws TGException
+     *
+     * @return int
+     */
+    public function getMessageId(): int
+    {
+        if ($this->messageId) {
+            throw new TGException(TGException::ERR_ASSERT_MESSAGE_ID_GET_ONCE);
+        }
+        $this->messageId = $this->msgIdGenerator->generateNext();
+
+        return $this->messageId;
+    }
+
+    /**
      * @param TLClientMessage $payload
      *
      * @throws TGException
@@ -146,7 +167,10 @@ class NotEncryptedSocketMessenger extends TgSocketMessenger
      */
     private function wrapPayloadWithMessageId(string $payload): string
     {
-        $msg_id = $this->msgIdGenerator->generateNext();
+        $msg_id = $this->messageId !== null
+            ? $this->messageId
+            : $this->msgIdGenerator->generateNext();
+        $this->messageId = null;
         $length = strlen($payload);
         $payload = pack('x8PI', $msg_id, $length).$payload;
 

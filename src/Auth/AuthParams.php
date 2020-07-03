@@ -25,6 +25,11 @@ class AuthParams
         return $this->authKey;
     }
 
+    public function getAuthKeyId(): string
+    {
+        return substr(sha1($this->authKey, true), -8);
+    }
+
     /**
      * @return string binary
      */
